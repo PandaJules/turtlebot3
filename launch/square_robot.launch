@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="random_walker" type="square.py" name="walk_robot"  output="screen">
+  </node>
+</launch>
