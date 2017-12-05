@@ -3,7 +3,9 @@
 import numpy as np
 import rospy
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan, JointState
+from tf.transformations import euler_from_quaternion
 
 """"**************************
 * Globals
@@ -11,9 +13,10 @@ from sensor_msgs.msg import LaserScan, JointState
 
 PI = 3.14159265
 turning_radius = 0.08
-rotate_angle = 50.0 * PI / 180
+rotate_angle = 45.0 * PI / 180
 front_distance_limit = 0.7
 side_distance_limit = 0.4
+wheel_radius = 0.033
 right_joint_encoder = 0.0
 priv_right_joint_encoder = 0.0
 direction_vector = [0, 0, 0]
@@ -25,6 +28,7 @@ CENTER = 0
 LEFT = 1
 RIGHT = 2
 turtlebot3_state = 0
+theta = 0
 
 
 def jointStateMsgCallBack(joint_state_msg):
@@ -50,6 +54,15 @@ def updateCommandVelocity(linear, angular):
     cmd_vel_pub.publish(cmd_vel)
 
 
+def update_angle(odom_msg):
+    global theta
+    quaternion = odom_msg.pose.pose.orientation
+    (roll, pitch, theta) = euler_from_quaternion([quaternion.x,
+                                                  quaternion.y,
+                                                  quaternion.z,
+                                                  quaternion.w])
+
+
 """"*******************************************************************************
 * Control Loop function
 *******************************************************************************"""
@@ -57,42 +70,39 @@ def updateCommandVelocity(linear, angular):
 
 def controlLoop():
     global priv_right_joint_encoder, turtlebot3_state
-    wheel_radius = 0.033
     turtlebot3_rotation = (rotate_angle * turning_radius / wheel_radius)
-    linear_vel_x = 0.3
+    linear_vel_x = 0.6
     angular_vel_z = 1.5
 
     if turtlebot3_state == GET_DIRECTION:
-        if direction_vector[CENTER] > front_distance_limit:
-            turtlebot3_state = DRIVE_FORWARD
-        if direction_vector[CENTER] < front_distance_limit or direction_vector[LEFT] < side_distance_limit:
+        """Normally TURN RIGHT, unless there is a wall, then either TURN LEFT or GO FORWARD"""
+        if direction_vector[LEFT] < side_distance_limit:
             priv_right_joint_encoder = right_joint_encoder - turtlebot3_rotation
             turtlebot3_state = RIGHT_TURN
         elif direction_vector[RIGHT] < side_distance_limit:
             priv_right_joint_encoder = right_joint_encoder + turtlebot3_rotation
             turtlebot3_state = LEFT_TURN
+        elif direction_vector[CENTER] < front_distance_limit:
+            priv_right_joint_encoder = right_joint_encoder - turtlebot3_rotation
+            turtlebot3_state = RIGHT_TURN
+        else:
+            turtlebot3_state = DRIVE_FORWARD
 
     elif turtlebot3_state == DRIVE_FORWARD:
         updateCommandVelocity(linear_vel_x, 0.0)
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == RIGHT_TURN:
-        if priv_right_joint_encoder == 0.0:
+        if abs(priv_right_joint_encoder - right_joint_encoder) < 0.1:
             turtlebot3_state = GET_DIRECTION
         else:
-            if abs(priv_right_joint_encoder - right_joint_encoder) < 0.1:
-                turtlebot3_state = GET_DIRECTION
-            else:
-                updateCommandVelocity(0.0, -1 * angular_vel_z)
+            updateCommandVelocity(0.0, -1 * angular_vel_z)
 
     elif turtlebot3_state == LEFT_TURN:
-        if priv_right_joint_encoder == 0.0:
-            turtlebot3_state = GET_DIRECTION
-        else:
-            if abs(priv_right_joint_encoder - right_joint_encoder) < 0.1:
+        if abs(priv_right_joint_encoder - right_joint_encoder) < 0.1:
                 turtlebot3_state = GET_DIRECTION
-            else:
-                updateCommandVelocity(0.0, angular_vel_z)
+        else:
+            updateCommandVelocity(0.0, angular_vel_z)
 
     else:
         turtlebot3_state = GET_DIRECTION
@@ -111,11 +121,10 @@ if __name__ == "__main__":
     rospy.loginfo("To stop TurtleBot CTRL + C")
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     laser_scan_sub = rospy.Subscriber('/scan', LaserScan, laserScanMsgCallBack)
-    # odometry_sub = rospy.Subscriber('/odom', Odometry, update_angle)
+    odometry_sub = rospy.Subscriber('/odom', Odometry, update_angle)
     joint_state_sub = rospy.Subscriber('/joint_states', JointState, jointStateMsgCallBack)
 
     r = rospy.Rate(125)
-
     while not rospy.is_shutdown():
         controlLoop()
         r.sleep()
