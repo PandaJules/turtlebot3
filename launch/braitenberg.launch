@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="random_walker" type="braitenberg.py" name="ros_gazebo_turtlebot3"  output="screen">
+  </node>
+</launch>
