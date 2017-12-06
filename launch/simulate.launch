@@ -1,4 +1,0 @@
-<launch>
-  <node pkg="random_walker" type="simulation.py" name="ros_gazebo_turtlebot3"  output="screen">
-  </node>
-</launch>

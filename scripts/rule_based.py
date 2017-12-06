@@ -12,7 +12,7 @@ from tf.transformations import euler_from_quaternion
 ***************************"""
 
 PI = 3.14159265
-turning_radius = 0.08
+half_wheel_separation = 0.08
 rotate_angle = 45.0 * PI / 180
 front_distance_limit = 0.7
 side_distance_limit = 0.4
@@ -70,20 +70,20 @@ def update_angle(odom_msg):
 
 def controlLoop():
     global priv_right_joint_encoder, turtlebot3_state
-    turtlebot3_rotation = (rotate_angle * turning_radius / wheel_radius)
+    wheel_rotation_angle = (rotate_angle * half_wheel_separation / wheel_radius)
     linear_vel_x = 0.6
     angular_vel_z = 1.5
 
     if turtlebot3_state == GET_DIRECTION:
         """Normally TURN RIGHT, unless there is a wall, then either TURN LEFT or GO FORWARD"""
         if direction_vector[LEFT] < side_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder - turtlebot3_rotation
+            priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
             turtlebot3_state = RIGHT_TURN
         elif direction_vector[RIGHT] < side_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder + turtlebot3_rotation
+            priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
             turtlebot3_state = LEFT_TURN
         elif direction_vector[CENTER] < front_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder - turtlebot3_rotation
+            priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
             turtlebot3_state = RIGHT_TURN
         else:
             turtlebot3_state = DRIVE_FORWARD
@@ -115,9 +115,9 @@ def controlLoop():
 if __name__ == "__main__":
     rospy.init_node('ros_gazebo_turtlebot3')
     rospy.loginfo("robot_model : BURGER")
-    rospy.loginfo("turning_radius_ : %lf", turning_radius)
-    rospy.loginfo("front_distance_limit_ = %lf", front_distance_limit)
-    rospy.loginfo("side_distance_limit_ = %lf", side_distance_limit)
+    rospy.loginfo("half_wheel_separation : %lf", half_wheel_separation)
+    rospy.loginfo("front_distance_limit = %lf", front_distance_limit)
+    rospy.loginfo("side_distance_limit = %lf", side_distance_limit)
     rospy.loginfo("To stop TurtleBot CTRL + C")
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     laser_scan_sub = rospy.Subscriber('/scan', LaserScan, laserScanMsgCallBack)
