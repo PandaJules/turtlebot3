@@ -19,15 +19,15 @@ def rotate(angle, velocity_publisher, clockwise=False, angular_speed=0.25):
     else:
         vel_msg.angular.z = abs(angular_speed)
 
-    while abs(theta%(2*PI) - goal_angle%(2*PI)) > 0.005:
+    while abs(theta % (2*PI) - goal_angle % (2*PI)) > 0.005:
         velocity_publisher.publish(vel_msg)
 
     vel_msg.angular.z = 0
     velocity_publisher.publish(vel_msg)
-    print "\n\nRotated successfully"
-    print "Rotation was by {},  pi/2 is {}".format(abs(theta%(2*PI) - initial_orientation%(2*PI)), PI/2.0)
-    print "Error is ", (2*abs(theta%(2*PI) - initial_orientation%(2*PI))-PI)/PI
-    print "New orientation is: ", theta
+    print("\n\nRotated successfully")
+    print("Rotation was by {},  pi/2 is {}".format(abs(theta % (2 * PI) - initial_orientation % (2 * PI)), PI / 2.0))
+    print("Error is ", (2 * abs(theta % (2 * PI) - initial_orientation % (2 * PI)) - PI) / PI)
+    print("New orientation is: ", theta)
 
 
 def go_forward(velocity_publisher):

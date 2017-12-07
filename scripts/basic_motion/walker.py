@@ -9,7 +9,7 @@ from tf.transformations import euler_from_quaternion
 PI = 3.1416
 wall_detected = False
 forward, left, right, back = [0, 0, 0, 0]
-front = 0
+front = 0.0
 scan = []
 theta = 0
 
@@ -17,14 +17,14 @@ theta = 0
 def go_forward(vel_publisher):
     vel_msg = Twist()
     vel_msg.linear.x = 0.8
-    print "Going at (linear, angular)", vel_msg.linear.x, vel_msg.angular.z
+    print("Going at (linear, angular)", vel_msg.linear.x, vel_msg.angular.z)
     vel_publisher.publish(vel_msg)
     r.sleep()
 
 
 def avoid(vel_publisher):
-    print "\n=============\nEntered avoid loop, turning away"
-    while 0 < front < 0.7:
+    print("\n=============\nEntered avoid loop, turning away")
+    while 0.0 < front < 0.7:
         velocity_msg = Twist()
         velocity_msg.linear.x = 0
         vel_publisher.publish(velocity_msg)
@@ -32,7 +32,7 @@ def avoid(vel_publisher):
             rotate_with_odometry(angle=10, velocity_publisher=vel_publisher, clockwise=True)
         else:
             rotate_with_odometry(angle=10, velocity_publisher=vel_publisher, clockwise=False)
-    print "Leaving avoid function\n==============="
+    print("Leaving avoid function\n===============")
 
 
 def update_angle(geom_msg):
@@ -76,11 +76,12 @@ def rotate_with_time(angle, velocity_publisher, clockwise=False, angular_speed=1
         current_angle = angular_speed*(t1-t0)
     vel_msg.angular.z = 0
     velocity_publisher.publish(vel_msg)
-    print "\nRotated successfully"
-    print "How close we got: {}".format(current_angle-relative_angle)
-    print "Rotation was by {},  pi/2 is {}".format(abs(theta%(2*PI) - initial_orientation%(2*PI)), PI/2.0)
-    print "Error is ", (abs(theta%(2*PI) - initial_orientation%(2*PI))-relative_angle)/relative_angle
-    print "New orientation is: {}\n".format(theta)
+    print("\nRotated successfully")
+    print("How close we got: {}".format(current_angle - relative_angle))
+    print("Rotation was by {},  pi/2 is {}".format(abs(theta % (2 * PI) - initial_orientation % (2 * PI)), PI / 2.0))
+    print("Error is ",
+          (abs(theta % (2 * PI) - initial_orientation % (2 * PI)) % (2 * PI) - relative_angle) / relative_angle)
+    print("New orientation is: {}\n".format(theta))
 
 
 def rotate_with_odometry(angle, velocity_publisher, clockwise=False, angular_speed=0.25):
@@ -94,15 +95,16 @@ def rotate_with_odometry(angle, velocity_publisher, clockwise=False, angular_spe
     else:
         vel_msg.angular.z = abs(angular_speed)
 
-    while abs(theta%(2*PI) - goal_angle%(2*PI)) > 0.005:
+    while abs(theta % (2*PI) - goal_angle % (2*PI)) > 0.005:
         velocity_publisher.publish(vel_msg)
 
     vel_msg.angular.z = 0
     velocity_publisher.publish(vel_msg)
-    print "\n\nRotated successfully"
-    print "Rotation was by {},  pi/2 is {}".format(abs(theta%(2*PI) - initial_orientation%(2*PI)), PI/2.0)
-    print "Error is ", (abs(theta%(2*PI) - initial_orientation%(2*PI))%(2*PI)-relative_angle)/relative_angle
-    print "New orientation is: ", theta
+    print("\nRotated successfully")
+    print("Rotation was by {},  pi/2 is {}".format(abs(theta % (2 * PI) - initial_orientation % (2 * PI)), PI / 2.0))
+    print("Error is ",
+          (abs(theta % (2 * PI) - initial_orientation % (2 * PI)) % (2 * PI) - relative_angle) / relative_angle)
+    print("New orientation is: {}\n".format(theta))
 
 
 if __name__ == "__main__":

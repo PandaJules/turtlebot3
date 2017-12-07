@@ -27,11 +27,11 @@ def rotate_with_time(angle, velocity_publisher, clockwise=False):
         current_angle = angular_speed*(t1-t0)
     vel_msg.angular.z = 0
     velocity_publisher.publish(vel_msg)
-    print "\n\nRotated successfully"
-    print "How close we got: {}".format(current_angle-relative_angle)
-    print "Rotation was by {},  pi/2 is {}".format(abs(theta%(2*PI) - initial_orientation%(2*PI)), PI/2.0)
-    print "Error is ", (abs(theta%(2*PI) - initial_orientation%(2*PI))-relative_angle)/relative_angle
-    print "New orientation is: ", theta
+    print("\n\nRotated successfully")
+    print("How close we got: {}".format(current_angle - relative_angle))
+    print("Rotation was by {},  pi/2 is {}".format(abs(theta % (2 * PI) - initial_orientation % (2 * PI)), PI / 2.0))
+    print("Error is ", (abs(theta % (2 * PI) - initial_orientation % (2 * PI)) - relative_angle) / relative_angle)
+    print("New orientation is: ", theta)
 
 
 def rotate_with_odometry(angle, velocity_publisher, clockwise=False, angular_speed=0.25):
@@ -45,15 +45,15 @@ def rotate_with_odometry(angle, velocity_publisher, clockwise=False, angular_spe
     else:
         vel_msg.angular.z = abs(angular_speed)
 
-    while abs(theta%(2*PI) - goal_angle%(2*PI)) > 0.005:
+    while abs(theta % (2*PI) - goal_angle % (2*PI)) > 0.005:
         velocity_publisher.publish(vel_msg)
 
     vel_msg.angular.z = 0
     velocity_publisher.publish(vel_msg)
-    print "\n\nRotated successfully"
-    print "Rotation was by {},  pi/2 is {}".format(abs(theta%(2*PI) - initial_orientation%(2*PI)), PI/2.0)
-    print "Error is ", (abs(theta%(2*PI) - initial_orientation%(2*PI))-relative_angle)/relative_angle
-    print "New orientation is: ", theta
+    print("\n\nRotated successfully")
+    print("Rotation was by {},  pi/2 is {}".format(abs(theta % (2 * PI) - initial_orientation % (2 * PI)), PI / 2.0))
+    print("Error is ", (abs(theta % (2 * PI) - initial_orientation % (2 * PI)) - relative_angle) / relative_angle)
+    print("New orientation is: ", theta)
 
 
 def update_angle(geom_msg):
@@ -79,4 +79,3 @@ if __name__ == "__main__":
         spin_on_the_spot()
     except rospy.ROSInterruptException:
         pass
-
