@@ -14,7 +14,8 @@ half_wheel_separation = 0.08
 front_distance_limit = 0.7
 side_distance_limit = 0.4
 sensor_left, sensor_right = 25, 25
-[V, W] = 0.3, 0
+V = 0
+W = 0
 
 
 def laserScanMsgCallBack(laser_msg):
@@ -22,7 +23,6 @@ def laserScanMsgCallBack(laser_msg):
     scan = laser_msg.ranges
     sensor_left = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[:50]))
     sensor_right = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[-50:]))
-    print(sensor_left)
 
 
 def cmdVelCallBack(cmd_msg):
@@ -42,7 +42,6 @@ def set_wheel_velocities(left_wheel_speed=0.0, right_wheel_speed=0.0):
     cmd_vel = Twist()
     cmd_vel.linear.x = (right_wheel_speed + left_wheel_speed)/2.0
     cmd_vel.angular.z = (right_wheel_speed - left_wheel_speed)/(2*half_wheel_separation)
-    print(cmd_vel.linear.x, cmd_vel.angular.z)
     cmd_vel_pub.publish(cmd_vel)
 
 
@@ -54,9 +53,8 @@ def set_wheel_velocities(left_wheel_speed=0.0, right_wheel_speed=0.0):
 def controlLoop():
     K = 1.0
     update = K*(sensor_right-sensor_left)/(sensor_right+sensor_right)
-    print(update)
-    left_vel = V*(1 + K*(sensor_right-sensor_left)/(sensor_right+sensor_right))
-    right_vel = V*(1 - K*(sensor_right-sensor_left)/(sensor_right+sensor_right))
+    left_vel = V*(1 + update)
+    right_vel = V*(1 - update)
     set_wheel_velocities(left_vel, right_vel)
 
 
