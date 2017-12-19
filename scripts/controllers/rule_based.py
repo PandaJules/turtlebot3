@@ -71,7 +71,7 @@ def update_angle(odom_msg):
 def controlLoop():
     global priv_right_joint_encoder, turtlebot3_state
     wheel_rotation_angle = (rotate_angle * half_wheel_separation / wheel_radius)
-    linear_vel_x = 0.6
+    linear_vel_x = 0.3
     angular_vel_z = 1.5
 
     if turtlebot3_state == GET_DIRECTION:

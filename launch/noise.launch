@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="random_walker" type="noise.py" name="noise_analyser"  output="screen">
+  </node>
+</launch>

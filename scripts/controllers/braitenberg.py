@@ -14,7 +14,7 @@ half_wheel_separation = 0.08
 front_distance_limit = 0.7
 side_distance_limit = 0.4
 sensor_left, sensor_right = 25, 25
-V = 0
+V = 0.3
 W = 0
 
 
