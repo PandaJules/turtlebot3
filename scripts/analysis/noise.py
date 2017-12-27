@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 import numpy as np
 import random
-import sys, select, termios, tty
+import sys, select, termios, tty, os
 import matplotlib.pyplot as plt
 scan = []
 max_range = 50
@@ -31,15 +31,23 @@ def update_laser_scan(scan_msg):
 
 
 def filter_front_scan(laser_scan):
-    return list(map(lambda dist: dist if not np.isinf(dist) else max_range, laser_scan[-90:90]))
+    f = laser_scan[-90:]+laser_scan[:91]
+    return list(map(lambda dist: dist if not np.isinf(dist) else max_range,
+                    f[::-1]))
 
 
 def take_one_front_shot():
     front = filter_front_scan(scan)
     # front = [random.uniform(0, 4) for _ in range(181)]
     angles = range(-90, 91)
+    plt.figure()
     plt.plot(angles, front)
-    plt.show()
+    plt.xlim((-90, 90))
+    filename = "/home/julia/Desktop/scan"
+    i = 0
+    while os.path.exists('{}{:d}.png'.format(filename, i)):
+        i += 1
+    plt.savefig('{}{:d}.png'.format(filename, i))
 
 
 if __name__ == "__main__":

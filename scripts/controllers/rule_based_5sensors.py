@@ -19,14 +19,19 @@ side_distance_limit = 0.4
 wheel_radius = 0.033
 right_joint_encoder = 0.0
 priv_right_joint_encoder = 0.0
-direction_vector = [0, 0, 0]
+direction_vector = [0]*5
+# States for FSM
 GET_DIRECTION = 0
 DRIVE_FORWARD = 1
 RIGHT_TURN = 2
 LEFT_TURN = 3
+# 5 sensors to the WEST, NW, N, NE, EAST
 CENTER = 0
-LEFT = 1
-RIGHT = 2
+NW = 1
+LEFT = 2
+RIGHT = 3
+NE = 4
+# State can be one of get_direction, driving forward, turning left or right
 turtlebot3_state = 0
 theta = 0
 
@@ -38,7 +43,7 @@ def jointStateMsgCallBack(joint_state_msg):
 
 def laserScanMsgCallBack(laser_msg):
     global direction_vector
-    angles = [0, 30, 330]
+    angles = [0, 45, 90, -90, -45]
 
     for counter, angle in enumerate(angles):
         if np.isinf(laser_msg.ranges[angle]):
@@ -77,16 +82,25 @@ def controlLoop():
     if turtlebot3_state == GET_DIRECTION:
         """Normally TURN RIGHT, unless there is a wall, then either TURN LEFT or GO FORWARD"""
         if direction_vector[LEFT] < side_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
-            turtlebot3_state = RIGHT_TURN
-        elif direction_vector[RIGHT] < side_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
-            turtlebot3_state = LEFT_TURN
-        elif direction_vector[CENTER] < front_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
-            turtlebot3_state = RIGHT_TURN
+            if direction_vector[NW] > side_distance_limit > direction_vector[NE]:
+                priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
+                turtlebot3_state = LEFT_TURN
+            elif direction_vector[CENTER] < side_distance_limit:
+                priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
+                turtlebot3_state = RIGHT_TURN
+            else:
+                turtlebot3_state = DRIVE_FORWARD
+
         else:
-            turtlebot3_state = DRIVE_FORWARD
+            if direction_vector[NE] > side_distance_limit > direction_vector[NW] \
+                    and direction_vector[CENTER] < side_distance_limit:
+                priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
+                turtlebot3_state = RIGHT_TURN
+            elif direction_vector[CENTER] > side_distance_limit:
+                turtlebot3_state = DRIVE_FORWARD
+            else:
+                priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
+                turtlebot3_state = LEFT_TURN
 
     elif turtlebot3_state == DRIVE_FORWARD:
         updateCommandVelocity(linear_vel_x, 0.0)
@@ -115,11 +129,10 @@ def controlLoop():
 if __name__ == "__main__":
     rospy.init_node('ros_gazebo_turtlebot3')
     rospy.loginfo("robot_model : BURGER")
-    rospy.loginfo("half_wheel_separation : %lf", half_wheel_separation)
-    rospy.loginfo("front_distance_limit = %lf", front_distance_limit)
-    rospy.loginfo("side_distance_limit = %lf", side_distance_limit)
     rospy.loginfo("To stop TurtleBot CTRL + C")
+
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
     laser_scan_sub = rospy.Subscriber('/scan', LaserScan, laserScanMsgCallBack)
     odometry_sub = rospy.Subscriber('/odom', Odometry, update_angle)
     joint_state_sub = rospy.Subscriber('/joint_states', JointState, jointStateMsgCallBack)
