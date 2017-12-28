@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-
+"""
+Tele-operation of the Turtlebot using the keyboard
+Pressing space takes a shot of lidar data and outputs distances for 360 degrees as a plot
+"""
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 import numpy as np
-import random
 import sys, select, termios, tty, os
 import matplotlib.pyplot as plt
 scan = []
@@ -38,12 +40,11 @@ def filter_front_scan(laser_scan):
 
 def take_one_front_shot():
     front = filter_front_scan(scan)
-    # front = [random.uniform(0, 4) for _ in range(181)]
     angles = range(-90, 91)
     plt.figure()
     plt.plot(angles, front)
     plt.xlim((-90, 90))
-    filename = "/home/julia/Desktop/scan"
+    filename = os.path.join(os.path.expanduser('~'), "Desktop")+"/scan"
     i = 0
     while os.path.exists('{}{:d}.png'.format(filename, i)):
         i += 1
