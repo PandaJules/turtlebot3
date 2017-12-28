@@ -6,6 +6,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan, JointState
 from tf.transformations import euler_from_quaternion
+import os
 
 """"**************************
 * Globals
@@ -33,7 +34,6 @@ RIGHT = 3
 NE = 4
 # State can be one of get_direction, driving forward, turning left or right
 turtlebot3_state = 0
-theta = 0
 
 
 def jointStateMsgCallBack(joint_state_msg):
@@ -59,15 +59,6 @@ def updateCommandVelocity(linear, angular):
     cmd_vel_pub.publish(cmd_vel)
 
 
-def update_angle(odom_msg):
-    global theta
-    quaternion = odom_msg.pose.pose.orientation
-    (roll, pitch, theta) = euler_from_quaternion([quaternion.x,
-                                                  quaternion.y,
-                                                  quaternion.z,
-                                                  quaternion.w])
-
-
 """"*******************************************************************************
 * Control Loop function
 *******************************************************************************"""
@@ -85,7 +76,7 @@ def controlLoop():
             if direction_vector[NW] > side_distance_limit > direction_vector[NE]:
                 priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
                 turtlebot3_state = LEFT_TURN
-            elif direction_vector[CENTER] < side_distance_limit:
+            elif direction_vector[CENTER] < front_distance_limit:
                 priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
                 turtlebot3_state = RIGHT_TURN
             else:
@@ -93,10 +84,10 @@ def controlLoop():
 
         else:
             if direction_vector[NE] > side_distance_limit > direction_vector[NW] \
-                    and direction_vector[CENTER] < side_distance_limit:
+                    and direction_vector[CENTER] < front_distance_limit:
                 priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
                 turtlebot3_state = RIGHT_TURN
-            elif direction_vector[CENTER] > side_distance_limit:
+            elif direction_vector[CENTER] > front_distance_limit:
                 turtlebot3_state = DRIVE_FORWARD
             else:
                 priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
@@ -127,17 +118,19 @@ def controlLoop():
 *******************************************************************************"""
 
 if __name__ == "__main__":
+    log_path = os.path.join(os.path.expanduser('~'), "Desktop")
+
     rospy.init_node('ros_gazebo_turtlebot3')
     rospy.loginfo("robot_model : BURGER")
     rospy.loginfo("To stop TurtleBot CTRL + C")
 
-    cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
 
     laser_scan_sub = rospy.Subscriber('/scan', LaserScan, laserScanMsgCallBack)
-    odometry_sub = rospy.Subscriber('/odom', Odometry, update_angle)
     joint_state_sub = rospy.Subscriber('/joint_states', JointState, jointStateMsgCallBack)
 
     r = rospy.Rate(125)
     while not rospy.is_shutdown():
         controlLoop()
         r.sleep()
+
