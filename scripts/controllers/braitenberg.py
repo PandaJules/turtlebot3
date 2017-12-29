@@ -13,13 +13,13 @@ PI = 3.14159265
 half_wheel_separation = 0.08
 front_distance_limit = 0.7
 side_distance_limit = 0.4
-sensor_left, sensor_right = 25, 25
+sensor_left, sensor_right = 5, 5
 V = 0.3
 W = 0
 
 
 def laserScanMsgCallBack(laser_msg):
-    global scan, sensor_right, sensor_left
+    global sensor_right, sensor_left
     scan = laser_msg.ranges
     sensor_left = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[:50]))
     sensor_right = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[-50:]))
@@ -77,4 +77,3 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         controlLoop()
         r.sleep()
-

@@ -14,14 +14,15 @@ def plot(path_to_coordinates):
     ys = []
 
     with open(path_to_coordinates, "r") as mycoords:
+        mycoords.readline()
         for line in mycoords:
             [x, y] = map(float, line.split(","))
             xs.append(x)
             ys.append(y)
 
     plt.figure()
-    plt.plot(xs, ys)
-    traj_name = "/home/julia/Desktop/traj"
+    plt.plot(xs, ys, 'b:')
+    traj_name = LOG_PATH +"/traj"
     j = 0
     while os.path.exists('{}{:d}.png'.format(traj_name, j)):
         j += 1
