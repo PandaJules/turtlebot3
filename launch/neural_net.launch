@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="random_walker" type="neural_net.py" name="ros_gazebo_turtlebot3"  output="screen">
+  </node>
+</launch>
