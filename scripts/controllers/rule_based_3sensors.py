@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+from math import radians, degrees
 import rospy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -12,14 +13,14 @@ from tf.transformations import euler_from_quaternion
 ***************************"""
 
 PI = 3.14159265
-half_wheel_separation = 0.08
-rotate_angle = 45.0 * PI / 180
+half_wheel_separation = 0.07
+rotate_angle = radians(45)
 front_distance_limit = 0.7
 side_distance_limit = 0.4
-wheel_radius = 0.033
+wheel_radius = 0.03
 wheel_rotation_angle = (rotate_angle * half_wheel_separation / wheel_radius)
 right_joint_encoder = 0.0
-priv_right_joint_encoder = 0.0
+new_right_joint_encoder = 0.0
 direction_vector = [0, 0, 0]
 GET_DIRECTION = 0
 DRIVE_FORWARD = 1
@@ -70,39 +71,47 @@ def update_angle(odom_msg):
 
 
 def controlLoop():
-    global priv_right_joint_encoder, turtlebot3_state
-    linear_vel_x = 0.3
-    angular_vel_z = 1.5
+    global new_right_joint_encoder, turtlebot3_state
+
+    cmd_vel = Twist()
+    cmd_vel.linear.x = 0.25
+    rot_vel_left = Twist()
+    rot_vel_left.angular.z = 1.57
+    rot_vel_right = Twist()
+    rot_vel_right.angular.z = -1.57
 
     if turtlebot3_state == GET_DIRECTION:
         """Normally TURN RIGHT, unless there is a wall, then either TURN LEFT or GO FORWARD"""
         if direction_vector[LEFT] < side_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
+            new_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
             turtlebot3_state = RIGHT_TURN
         elif direction_vector[RIGHT] < side_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
+            new_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
             turtlebot3_state = LEFT_TURN
         elif direction_vector[CENTER] < front_distance_limit:
-            priv_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
+            new_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
             turtlebot3_state = RIGHT_TURN
         else:
             turtlebot3_state = DRIVE_FORWARD
 
     elif turtlebot3_state == DRIVE_FORWARD:
-        updateCommandVelocity(linear_vel_x, 0.0)
+        cmd_vel_pub.publish(cmd_vel)
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == RIGHT_TURN:
-        if abs(priv_right_joint_encoder - right_joint_encoder) < 0.1:
-            turtlebot3_state = GET_DIRECTION
-        else:
-            updateCommandVelocity(0.0, -1 * angular_vel_z)
+        a = right_joint_encoder
+        t = degrees(theta%(2*PI))
+        while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
+            cmd_vel_pub.publish(rot_vel_right)
+        print(a - right_joint_encoder)
+        print(abs(degrees(theta%(2*PI))-t))
+        turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == LEFT_TURN:
-        if abs(priv_right_joint_encoder - right_joint_encoder) < 0.1:
-                turtlebot3_state = GET_DIRECTION
-        else:
-            updateCommandVelocity(0.0, angular_vel_z)
+        while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
+            cmd_vel_pub.publish(rot_vel_left)
+
+        turtlebot3_state = GET_DIRECTION
 
     else:
         turtlebot3_state = GET_DIRECTION
