@@ -12,7 +12,7 @@ import os
 """"**************************
 * Globals
 ***************************"""
-
+LOG_PATH = os.path.join(os.path.expanduser('~'), "Desktop")
 PI = 3.14159265
 half_wheel_separation = 0.07
 rotate_angle = radians(45)
@@ -39,6 +39,7 @@ turtlebot3_state = 0
 turtlebot3_lin_vel = 0
 turtlebot3_ang_vel = 0
 theta = 0
+t=0
 
 
 def jointStateMsgCallBack(joint_state_msg):
@@ -47,7 +48,7 @@ def jointStateMsgCallBack(joint_state_msg):
 
 
 def laserScanMsgCallBack(laser_msg):
-    global direction_vector, dv
+    global direction_vector
     angles = [0, 45, 90, -90, -45]
 
     for counter, angle in enumerate(angles):
@@ -55,11 +56,6 @@ def laserScanMsgCallBack(laser_msg):
             direction_vector[counter] = laser_msg.range_max
         else:
             direction_vector[counter] = laser_msg.ranges[angle]
-    # dv[0] = direction_vector[2] < front_distance_limit
-    # dv[1] = direction_vector[1] < oblique_distance_limit
-    # dv[2] = direction_vector[0] < side_distance_limit
-    # dv[3] = direction_vector[4] < oblique_distance_limit
-    # dv[4] = direction_vector[3] < side_distance_limit
 
 
 def updateCommandVelocity(linear, angular):
@@ -77,6 +73,8 @@ def update_angle(odom_msg):
                                                   quaternion.z,
                                                   quaternion.w])
 
+    theta = theta % (2*PI)
+
 
 def cmdMsgCallBack(cmd_msg):
     global turtlebot3_lin_vel, turtlebot3_ang_vel
@@ -90,15 +88,15 @@ def cmdMsgCallBack(cmd_msg):
 
 
 def controlLoop():
-    global new_right_joint_encoder, turtlebot3_state
-    wheel_rotation_angle = 1.01*(rotate_angle * half_wheel_separation / wheel_radius)
+    global new_right_joint_encoder, turtlebot3_state, t
+    wheel_rotation_angle = 1.02*(rotate_angle * half_wheel_separation / wheel_radius)
     cmd_vel = Twist()
     cmd_vel.linear.x = 0.25
     rot_vel_left = Twist()
     rot_vel_left.angular.z = 1.57
     rot_vel_right = Twist()
     rot_vel_right.angular.z = -1.57
-    t=0
+    f = open(LOG_PATH+"/angles3.txt", "a")
 
     if turtlebot3_state == GET_DIRECTION:
         """Normally TURN RIGHT, unless there is a wall, then either TURN LEFT or GO FORWARD"""
@@ -127,7 +125,6 @@ def controlLoop():
             if direction_vector[NW] > oblique_distance_limit > direction_vector[NE]:
                 turtlebot3_state = LEFT_TURN
             elif direction_vector[CENTER] < front_distance_limit or direction_vector[NW] < oblique_distance_limit:
-                t = degrees(theta % (2 * PI))
                 turtlebot3_state = RIGHT_TURN
             else:
                 turtlebot3_state = DRIVE_FORWARD
@@ -139,7 +136,6 @@ def controlLoop():
             elif direction_vector[CENTER] > front_distance_limit and direction_vector[NW] > oblique_distance_limit:
                 turtlebot3_state = DRIVE_FORWARD
             else:
-                t = degrees(theta % (2 * PI))
                 turtlebot3_state = RIGHT_TURN
 
     elif turtlebot3_state == DRIVE_FORWARD:
@@ -148,19 +144,32 @@ def controlLoop():
 
     elif turtlebot3_state == LEFT_TURN:
         new_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
+        t = degrees(theta)
+        a = right_joint_encoder
         while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
             cmd_vel_pub.publish(rot_vel_left)
-
+        a2 = a - right_joint_encoder
+        c2 = abs(degrees(theta) - t)
+        c2 = c2 if c2 < 180 else 360 - c2
+        b = degrees(a2 * wheel_radius / half_wheel_separation)
+        print(b)
+        f.write("{}\n".format(b))
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == RIGHT_TURN:
         new_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
-        t = degrees(theta % (2 * PI))
+        t = degrees(theta)
         a = right_joint_encoder
         while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
             cmd_vel_pub.publish(rot_vel_right)
-        print(a - right_joint_encoder)
-        print(abs(degrees(theta % (2 * PI)) - t))
+        a2 = a - right_joint_encoder
+        c2 = abs(degrees(theta) - t)
+        c2 = c2 if c2 < 180 else 360 - c2
+        b = degrees(a2*wheel_radius/half_wheel_separation)
+        print(b)
+        f.write("{}\n".format(b))
+        # print(abs((c2/b-1)*100))
+        # print("\n\n")
         turtlebot3_state = GET_DIRECTION
 
     else:
@@ -189,4 +198,3 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         controlLoop()
         r.sleep()
-
