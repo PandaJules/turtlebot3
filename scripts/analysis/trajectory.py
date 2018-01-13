@@ -22,7 +22,7 @@ def plot(path_to_coordinates):
 
     plt.figure()
     plt.plot(xs, ys, 'b:')
-    traj_name = LOG_PATH +"/traj"
+    traj_name = LOG_PATH + "/screenshots" +"/traj"
     j = 0
     while os.path.exists('{}{:d}.png'.format(traj_name, j)):
         j += 1
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     while os.path.exists('{}{:d}.txt'.format(filename, i)):
         i += 1
     filename = '{}{:d}.txt'.format(filename, i)
-    
+
     try:
         with open(filename, 'a') as tlog:
             while 1:
