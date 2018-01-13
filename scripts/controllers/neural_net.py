@@ -24,7 +24,7 @@ RIGHT = 4
 # NN weights 5x2 for every sensor to each wheel
 WEIGHTS = [[0, 0, 0.1, 0.3, 0.15],
            [0.15, 0.3, 0.1, 0, 0]]
-V_bias = [0.4, 0.4]
+V_bias = [0.2, 0.2]
 
 
 def laserScanMsgCallBack(laser_msg):
