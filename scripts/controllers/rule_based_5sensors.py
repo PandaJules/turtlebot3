@@ -15,14 +15,14 @@ import os
 LOG_PATH = os.path.join(os.path.expanduser('~'), "Desktop")
 PI = 3.14159265
 half_wheel_separation = 0.07
-rotate_angle = radians(45)
-front_distance_limit = 0.8
-oblique_distance_limit = 0.6
-side_distance_limit = 0.5
+rotate_angle = radians(40)
+front_distance_limit = 0.2
+oblique_distance_limit = 0.2
+side_distance_limit = 0.2
 wheel_radius = 0.03
 right_joint_encoder = 0.0
 new_right_joint_encoder = 0.0
-direction_vector = [0]*5
+direction_vector = [1]*5
 # States for FSM
 GET_DIRECTION = 0
 DRIVE_FORWARD = 1
@@ -35,7 +35,7 @@ LEFT = 2
 RIGHT = 3
 NE = 4
 # State can be one of get_direction, driving forward, turning left or right
-turtlebot3_state = 0
+turtlebot3_state = 1
 turtlebot3_lin_vel = 0
 turtlebot3_ang_vel = 0
 theta = 0
@@ -91,52 +91,36 @@ def controlLoop():
     global new_right_joint_encoder, turtlebot3_state, t
     wheel_rotation_angle = 1.02*(rotate_angle * half_wheel_separation / wheel_radius)
     cmd_vel = Twist()
-    cmd_vel.linear.x = 0.25
+    cmd_vel.linear.x = 0.22
     rot_vel_left = Twist()
     rot_vel_left.angular.z = 1.57
     rot_vel_right = Twist()
     rot_vel_right.angular.z = -1.57
-    f = open(LOG_PATH+"/angles3.txt", "a")
+    f = open(LOG_PATH+"/angles4.txt", "a")
 
     if turtlebot3_state == GET_DIRECTION:
         """Normally TURN RIGHT, unless there is a wall, then either TURN LEFT or GO FORWARD"""
-        # if direction_vector[LEFT] < side_distance_limit:
-        #     if direction_vector[NW] > side_distance_limit > direction_vector[NE]:
-        #         new_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
-        #         turtlebot3_state = LEFT_TURN
-        #     elif direction_vector[CENTER] < front_distance_limit:
-        #         new_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
-        #         turtlebot3_state = RIGHT_TURN
-        #     else:
-        #         turtlebot3_state = DRIVE_FORWARD
-        #
-        # else:
-        #     if direction_vector[NE] > side_distance_limit > direction_vector[NW] \
-        #             and direction_vector[CENTER] < front_distance_limit:
-        #         new_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
-        #         turtlebot3_state = RIGHT_TURN
-        #     elif direction_vector[CENTER] > front_distance_limit:
-        #         turtlebot3_state = DRIVE_FORWARD
-        #     else:
-        #         new_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
-        #         turtlebot3_state = LEFT_TURN
-
-        if direction_vector[LEFT] < side_distance_limit:
-            if direction_vector[NW] > oblique_distance_limit > direction_vector[NE]:
-                turtlebot3_state = LEFT_TURN
-            elif direction_vector[CENTER] < front_distance_limit or direction_vector[NW] < oblique_distance_limit:
-                turtlebot3_state = RIGHT_TURN
+        if direction_vector[CENTER] < front_distance_limit:
+            if direction_vector[RIGHT] < side_distance_limit < direction_vector[LEFT] or \
+                direction_vector[NE]<oblique_distance_limit and direction_vector[RIGHT]<side_distance_limit and direction_vector[NW]>oblique_distance_limit or \
+                    direction_vector[NW] > oblique_distance_limit and direction_vector[LEFT] > side_distance_limit and direction_vector[NE] < oblique_distance_limit:
+                    turtlebot3_state = LEFT_TURN
             else:
-                turtlebot3_state = DRIVE_FORWARD
+                print([direction_vector[LEFT] < side_distance_limit, direction_vector[NW] < oblique_distance_limit,
+                       direction_vector[CENTER] < front_distance_limit, direction_vector[NE] < oblique_distance_limit,
+                       direction_vector[RIGHT] < side_distance_limit])
+                turtlebot3_state = RIGHT_TURN
 
         else:
-            if direction_vector[NE] < oblique_distance_limit and \
-                    (direction_vector[NW] > oblique_distance_limit or direction_vector[CENTER] < front_distance_limit):
-                turtlebot3_state = LEFT_TURN
-            elif direction_vector[CENTER] > front_distance_limit and direction_vector[NW] > oblique_distance_limit:
-                turtlebot3_state = DRIVE_FORWARD
-            else:
+            if direction_vector[NW] < oblique_distance_limit < direction_vector[NE] and direction_vector[RIGHT] > side_distance_limit:
+                print([direction_vector[LEFT] < side_distance_limit, direction_vector[NW] < oblique_distance_limit,
+                       direction_vector[CENTER] < front_distance_limit, direction_vector[NE] < oblique_distance_limit,
+                       direction_vector[RIGHT] < side_distance_limit])
                 turtlebot3_state = RIGHT_TURN
+            elif direction_vector[NE] < oblique_distance_limit < direction_vector[NW] and direction_vector[LEFT] > side_distance_limit:
+                turtlebot3_state = LEFT_TURN
+            else:
+                turtlebot3_state = DRIVE_FORWARD
 
     elif turtlebot3_state == DRIVE_FORWARD:
         cmd_vel_pub.publish(cmd_vel)
@@ -152,8 +136,8 @@ def controlLoop():
         c2 = abs(degrees(theta) - t)
         c2 = c2 if c2 < 180 else 360 - c2
         b = degrees(a2 * wheel_radius / half_wheel_separation)
-        print(b)
-        f.write("{}\n".format(b))
+        print(b, c2)
+        f.write("{},{}\n".format(b, c2))
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == RIGHT_TURN:
@@ -166,10 +150,8 @@ def controlLoop():
         c2 = abs(degrees(theta) - t)
         c2 = c2 if c2 < 180 else 360 - c2
         b = degrees(a2*wheel_radius/half_wheel_separation)
-        print(b)
-        f.write("{}\n".format(b))
-        # print(abs((c2/b-1)*100))
-        # print("\n\n")
+        print(b, c2)
+        f.write("{},{}\n".format(b, c2))
         turtlebot3_state = GET_DIRECTION
 
     else:
