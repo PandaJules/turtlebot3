@@ -10,19 +10,17 @@ from sensor_msgs.msg import LaserScan
 ***************************"""
 
 PI = 3.14159265
-half_wheel_separation = 0.08
-front_distance_limit = 0.7
-side_distance_limit = 0.4
+half_wheel_separation = 0.07
 sensor_left, sensor_right = 5, 5
-V = 0.3
+V = 0.4
 W = 0
 
 
 def laserScanMsgCallBack(laser_msg):
     global sensor_right, sensor_left
     scan = laser_msg.ranges
-    sensor_left = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[:50]))
-    sensor_right = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[-50:]))
+    sensor_left = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[45:90]))
+    sensor_right = sum(map(lambda dist: dist if not np.isinf(dist) else laser_msg.range_max, scan[-90:-45]))
 
 
 def cmdVelCallBack(cmd_msg):
@@ -55,6 +53,7 @@ def controlLoop():
     update = K*(sensor_right-sensor_left)/(sensor_right+sensor_right)
     left_vel = V*(1 + update)
     right_vel = V*(1 - update)
+    print(update, sensor_left, sensor_right, left_vel, right_vel)
     set_wheel_velocities(left_vel, right_vel)
 
 
@@ -65,9 +64,6 @@ def controlLoop():
 if __name__ == "__main__":
     rospy.init_node('ros_gazebo_turtlebot3')
     rospy.loginfo("robot_model : BURGER")
-    rospy.loginfo("turning_radius_ : %lf", half_wheel_separation)
-    rospy.loginfo("front_distance_limit_ = %lf", front_distance_limit)
-    rospy.loginfo("side_distance_limit_ = %lf", side_distance_limit)
     rospy.loginfo("To stop TurtleBot CTRL + C")
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, cmdVelCallBack)
