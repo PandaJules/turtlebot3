@@ -32,23 +32,27 @@ def update_laser_scan(scan_msg):
     max_range = scan_msg.range_max
 
 
-def filter_front_scan(laser_scan):
-    f = laser_scan[-90:]+laser_scan[:91]
+def filter_front_scan(laser_scan, start_angle=-90, stop_angle=91):
+    f = laser_scan[start_angle:]+laser_scan[:stop_angle]
     return list(map(lambda dist: dist if not np.isinf(dist) else max_range,
                     f[::-1]))
 
 
-def take_one_front_shot():
-    front = filter_front_scan(scan)
-    angles = range(-90, 91)
-    plt.figure()
+def take_front_shot(start_angle=-90, stop_angle=91, new_file=False, multiple=False):
+    front = filter_front_scan(scan, start_angle=start_angle, stop_angle=stop_angle)
+    angles = range(start_angle, stop_angle)
+    if not multiple:
+        plt.figure()
     plt.plot(angles, front)
-    plt.xlim((-90, 90))
+    plt.xlim((start_angle, stop_angle-1))
     filename = os.path.join(os.path.expanduser('~'), "Desktop")+"/scan"
-    i = 0
-    while os.path.exists('{}{:d}.png'.format(filename, i)):
-        i += 1
-    plt.savefig('{}{:d}.png'.format(filename, i))
+    if new_file:
+        i = 0
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i))
+    else:
+        plt.savefig('{}__.png'.format(filename))
 
 
 if __name__ == "__main__":
@@ -82,7 +86,7 @@ if __name__ == "__main__":
                 target_angular_vel = 0
                 control_angular_vel = 0
             elif key == ' ':
-                take_one_front_shot()
+                take_front_shot(start_angle=-10, stop_angle=11, multiple=True)
             else:
                 if key == '\x03':
                     break
