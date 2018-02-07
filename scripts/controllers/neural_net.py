@@ -30,21 +30,25 @@ V_bias = [0.2, 0.2]
 def laserScanMsgCallBack(laser_msg):
     global direction_vector
     scan = laser_msg.ranges
-    angles = [89, 44, 0, -45, -90]
+    angles = [90, 45, 0, -45, -90]
 
     for counter, angle in enumerate(angles):
         if np.isinf(scan[angle]):
-            direction_vector[counter] = laser_msg.range_max
+            direction_vector[counter] = min(laser_msg.range_max,
+                                            np.median([scan[angle - 2], scan[angle - 1], scan[angle],
+                                                       scan[angle + 1], scan[angle + 2]]))
         else:
-            direction_vector[counter] = scan[angle]
+
+            direction_vector[counter] = np.median(
+                [scan[angle - 2], scan[angle - 1], scan[angle], scan[angle + 1], scan[angle + 2]])
 
 
 def set_wheel_velocities(left_wheel_speed=0.0, right_wheel_speed=0.0):
     cmd_vel = Twist()
-    cmd_vel.linear.x = (right_wheel_speed + left_wheel_speed)/2.0
-    cmd_vel.angular.z = (right_wheel_speed - left_wheel_speed)/(2*half_wheel_separation)
+    cmd_vel.linear.x = (right_wheel_speed + left_wheel_speed) / 2.0
+    cmd_vel.angular.z = (right_wheel_speed - left_wheel_speed) / (2 * half_wheel_separation)
     cmd_vel_pub.publish(cmd_vel)
-    print(cmd_vel.linear.x, cmd_vel.angular.z)
+    # print(cmd_vel.linear.x, cmd_vel.angular.z)
 
 
 """"*******************************************************************************
