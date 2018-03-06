@@ -16,8 +16,8 @@ LOG_PATH = os.path.join(os.path.expanduser('~'), "Desktop")
 PI = 3.14159265
 half_wheel_separation = 0.07
 rotate_angle = radians(40)
-front_distance_limit = 0.2
-oblique_distance_limit = 0.2
+front_distance_limit = 0.5
+oblique_distance_limit = 0.6
 side_distance_limit = 0.2
 wheel_radius = 0.03
 right_joint_encoder = 0.0
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     joint_state_sub = rospy.Subscriber('/joint_states', JointState, jointStateMsgCallBack)
     odometry_sub = rospy.Subscriber('/odom', Odometry, update_angle)
 
-    r = rospy.Rate(125)
+    r = rospy.Rate(250)
     while not rospy.is_shutdown():
         controlLoop()
         r.sleep()

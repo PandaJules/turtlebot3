@@ -1,0 +1,43 @@
+<sdf version='1.4'>
+    <model name='Cylinder_hollow'>
+      <static>1</static>
+	<link name='symbol'>
+        <!-- Draw Wall -->
+        <collision name='body'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://Cylinder_hollow/meshes/hollow_cylinder.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        <max_contacts>10</max_contacts>
+        <surface>
+          <bounce/>
+          <friction>
+            <ode/>
+          </friction>
+          <contact>
+            <ode/>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name='body'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://Cylinder_hollow/meshes/hollow_cylinder.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Purple</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
