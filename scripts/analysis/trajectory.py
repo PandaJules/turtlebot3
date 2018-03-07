@@ -20,14 +20,14 @@ def odomMsgCallBack(odom_msg):
 
 
 def track():
-    global x_sim_prev, y_sim_prev
+    global x_sim_prev, y_sim_prev, number_of_laps
     filename = LOG_PATH + "/logs/trajectory_log_"
     i = 1
     while os.path.exists('{}{:d}.txt'.format(filename, i)):
         i += 1
     filename = '{}{:d}.txt'.format(filename, i)
 
-    r = rospy.Rate(10)
+    print("Writing a log file of trajectories to {}".format(filename))
     try:
         with open(filename, 'a') as tlog:
             while 1:
@@ -36,8 +36,11 @@ def track():
                     x_sim_prev = x_sim
                     y_sim_prev = y_sim
                 r.sleep()
+                if round(x_sim,1) == start_x and start_y-2<round(y_sim,1)<start_x-2:
+                    number_of_laps += 1
+                    print("New lap {}".format(number_of_laps))
     except Exception as e:
-        print e
+        print(e)
 
 
 if __name__ == "__main__":
@@ -47,6 +50,11 @@ if __name__ == "__main__":
     pub2 = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
     reset_world = rospy.ServiceProxy("/gazebo/reset_world", Empty)
 
+    r = rospy.Rate(100)
+    r.sleep(10)
+    if (x_sim, y_sim) != (0, 0):
+        start_x = x_sim
+        start_y = y_sim
     # model_state_msg = ModelState()
     # model_state_msg.model_name = 'turtlebot3_burger'
     # model_state_msg.pose.orientation.x = 0
@@ -58,5 +66,5 @@ if __name__ == "__main__":
     # model_state_msg.pose.position.z = 0
     # model_state_msg.twist.linear.x = 0
     # model_state_msg.twist.angular.z = 0
-
+    number_of_laps = 0
     track()
