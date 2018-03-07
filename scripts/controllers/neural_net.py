@@ -14,8 +14,8 @@ half_wheel_separation = 0.08
 front_distance_limit = 0.7
 side_distance_limit = 0.4
 direction_vector = [0, 0, 0, 0, 0]
-MAX_TB3_LINEAR = 0.5
-MAX_TB3_ANGULAR = 2.8
+MAX_TB3_LINEAR = 0.8
+MAX_TB3_ANGULAR = 2.0
 # 5 sensors to the WEST, NW, N, NE, EAST
 LEFT = 0
 NW = 1
@@ -27,7 +27,7 @@ RIGHT = 4
 c = 0.3
 WEIGHTS = [[0, 0, c/3, c, c/2],
            [c/2, c, c/3, 0, 0]]
-V_bias = [0.3, 0.3]
+V_bias = [0, 0]
 
 
 def laserScanMsgCallBack(laser_msg):
@@ -49,14 +49,17 @@ def set_wheel_velocities(left_wheel_speed=0.0, right_wheel_speed=0.0):
     cmd_vel = Twist()
     cmd_vel.linear.x = (right_wheel_speed + left_wheel_speed) / 2.0
     if cmd_vel.linear.x > MAX_TB3_LINEAR:
-        V_bias = [v-0.1 for v in V_bias]
+        V_bias = [v-0.05 for v in V_bias]
+    elif cmd_vel.linear.x < 0.1:
+        V_bias = [v + 0.05 for v in V_bias]
     cmd_vel.angular.z = (right_wheel_speed - left_wheel_speed) / (2 * half_wheel_separation)
-    if cmd_vel.angular.z > MAX_TB3_ANGULAR:
-        cmd_vel.angular.z = MAX_TB3_ANGULAR
-    if cmd_vel.angular.z < -MAX_TB3_ANGULAR:
-        cmd_vel.angular.z = -MAX_TB3_ANGULAR
+    if cmd_vel.angular.z > 0:
+        cmd_vel.angular.z = min(MAX_TB3_ANGULAR, cmd_vel.angular.z)
+    else:
+        cmd_vel.angular.z = max(-MAX_TB3_ANGULAR, cmd_vel.angular.z)
+
     cmd_vel_pub.publish(cmd_vel)
-    print(cmd_vel.linear.x, cmd_vel.angular.z)
+    print(cmd_vel.linear.x, cmd_vel.angular.z, V_bias)
 
 
 """"*******************************************************************************
