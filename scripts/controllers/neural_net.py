@@ -5,7 +5,9 @@ import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Int32, Bool
+from gazebo_msgs.msg import ContactState, ModelState
 import itertools
+import os
 
 
 """"**************************
@@ -38,10 +40,12 @@ weight_space = [p for p in itertools.product([0.1, 0.2, 0.3, 0.4, 0.5], repeat=3
 V_bias = [0, 0]
 w = -1
 lap_num_zeroed = False
+bad_weights_file = os.path.join(os.path.expanduser('~'), "Desktop") + "/bad_weights.txt"
+trying_to_stabilize = False
 
-def lapMsgCallBack(weight_msg):
+def lapMsgCallBack(lap_msg):
     global WEIGHTS, a, b, c, w, lap_num_zeroed
-    lap = weight_msg.data
+    lap = lap_msg.data
     if lap == 0:
         if not lap_num_zeroed:
             lap_num_zeroed = True
@@ -58,6 +62,45 @@ def lapMsgCallBack(weight_msg):
     else:
         lap_num_zeroed = False
         shut_trajectory.publish(Bool(data=False))
+
+
+def stabilize():
+    cmd_vel = Twist()
+    cmd_vel.linear.x = 0
+    cmd_vel.angular.z = 0
+
+    model_state_msg = ModelState()
+    model_state_msg.model_name = 'turtlebot3_burger'
+    model_state_msg.pose.orientation.x = 0
+    model_state_msg.pose.orientation.y = 0
+    model_state_msg.pose.orientation.z = 0
+    model_state_msg.pose.orientation.w = 1
+    if rospy.has_param('startXY'):
+        x = rospy.get_param('startXY/x')
+        y = rospy.get_param('startXY/y')
+    else:
+        rospy.logerr("NO PARAMETER NAMED startXY, setting to default")
+        x = 0
+        y = 2.5
+    model_state_msg.pose.position.x = x
+    model_state_msg.pose.position.y = y
+    model_state_msg.pose.position.z = 0
+
+    for _ in range(100):
+        cmd_vel_pub.publish(cmd_vel)
+        model_pub.publish(model_state_msg)
+
+
+def collisionCallBack(collision_msg):
+    global trying_to_stabilize
+    # if we have any collisions at all, discard those weights
+    if not collision_msg.contact_positions:
+        trying_to_stabilize = True
+        with open(bad_weights_file, 'a') as f:
+            f.write("{},{},{}\n".format(a, b, c))
+
+
+
 
 def laserScanMsgCallBack(laser_msg):
     global direction_vector
@@ -118,10 +161,17 @@ if __name__ == "__main__":
 
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=3)
     shut_trajectory = rospy.Publisher('/paramSearch', Bool, queue_size=3)
+    model_pub = rospy.Publisher('/gazebo/set_model_state', ModelState, queue_size=5)
     laser_scan_sub = rospy.Subscriber('/scan', LaserScan, laserScanMsgCallBack)
     laps_sub = rospy.Subscriber('/laps', Int32, lapMsgCallBack)
+    collision_sub = rospy.Subscriber('/robot_bumper', ContactState, collisionCallBack)
 
     r = rospy.Rate(125)
     while not rospy.is_shutdown():
-        controlLoop()
-        r.sleep()
+        if trying_to_stabilize:
+            stabilize()
+            trying_to_stabilize = False
+        else:
+            controlLoop()
+            r.sleep()
+
