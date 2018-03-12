@@ -21,8 +21,9 @@ def plot(path_to_coordinates, i):
 
 
 if __name__ == "__main__":
-    num = int(input("Enter log file number to visualise that trajectory:\n"))
-    try:
-        plot(LOG_PATH + "/logs/trajectory_log_{}.txt".format(num), num)
-    except Exception as e:
-        print(e)
+    # num = int(input("Enter log file number to visualise that trajectory:\n"))
+    for i in range(600, 650):
+        try:
+            plot(LOG_PATH + "/logs/trajectory_log_{}.txt".format(i), i)
+        except Exception as e:
+            pass
