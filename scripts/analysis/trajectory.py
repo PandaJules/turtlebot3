@@ -31,20 +31,13 @@ def logCallBack(log_msg):
     global can_log
     can_log = log_msg.data
     if not can_log:
-        print("Cannot log for a while")
+        print("Cannot log for a while...")
 
 
 def simple_track():
     global x_sim_prev, y_sim_prev, current_lap, at_cross_line
 
-    i = int(input("Which log file to write to: -1 for automatic detection / any other integer for your choice\n"))
-    file_name_ = LOG_PATH + "/logs/trajectory_log_"
-    if i < 0:
-        i = 1
-        while os.path.exists('{}{:d}.txt'.format(file_name_, i)):
-            i += 1
-    filename = '{}{:d}.txt'.format(file_name_, i)
-    print("Writing a log file of trajectories to {}".format(filename))
+    filename = determine_filename()
 
     try:
         with open(filename, 'a') as tlog:
@@ -63,6 +56,35 @@ def simple_track():
                 else:
                         at_cross_line = False
 
+                r.sleep()
+    except Exception as e:
+        print(e)
+
+
+def track_firsts():
+    global x_sim_prev, y_sim_prev, current_lap, at_cross_line
+
+    filename = determine_filename()
+
+    try:
+        with open(filename, 'a') as tlog:
+            while 1:
+                if can_log and (round(x_sim_prev, 5) != round(x_sim, 5) or round(y_sim_prev, 5) != round(y_sim, 5)):
+                    tlog.write('{:.6f},{:.6f}\n'.format(x_sim, y_sim))
+                    x_sim_prev = x_sim
+                    y_sim_prev = y_sim
+
+                # if we are at the line where we started, then we have done a lap, so restart
+                if abs(round(x_sim, 3) - start_x) < 0.05 and abs(round(y_sim, 3) - start_y) < 1:
+                    if not at_cross_line:
+                        at_cross_line = True
+                        current_lap += 1
+                        print("New lap. Number {} started".format(current_lap))
+                else:
+                    at_cross_line = False
+
+                laps = Int32(data=current_lap)
+                lap_pub.publish(laps)
                 r.sleep()
     except Exception as e:
         print(e)
@@ -120,6 +142,18 @@ def param_search_track():
         print(e)
 
 
+def determine_filename():
+    i = int(input("Which log file to write to: -1 for automatic detection / any other integer for your choice\n"))
+    file_name_ = LOG_PATH + "/logs/trajectory_log_"
+    if i < 0:
+        i = 1
+        while os.path.exists('{}{:d}.txt'.format(file_name_, i)):
+            i += 1
+    filename = '{}{:d}.txt'.format(file_name_, i)
+    print("Writing a log file of trajectories to {}".format(filename))
+    return filename
+
+
 if __name__ == "__main__":
     rospy.init_node('turtlebot3_trajectory')
     odometry_sub = rospy.Subscriber('/odom', Odometry, odomMsgCallBack)
@@ -127,9 +161,7 @@ if __name__ == "__main__":
     traj_wait_sub = rospy.Subscriber('/can_log', Bool, logCallBack)
     lap_pub = rospy.Publisher('/laps', Int32, queue_size=5)
 
-    # reset_world = rospy.ServiceProxy("/gazebo/reset_world", Empty)
-
-    r = rospy.Rate(50)
+    r = rospy.Rate(100)
     while (x_sim, y_sim) == (0, 0):
         r.sleep()
 
@@ -137,11 +169,13 @@ if __name__ == "__main__":
     start_y = round(y_sim, 2)
     print("Start coordinates are {:.3f},{:.3f}".format(start_x, start_y))
     di = {'x': start_x, 'y': start_y}
-    rospy.set_param('startXY', str(di))
+    rospy.set_param('startXY', di)
 
-    current_lap = -1
-    choice = raw_input("Simple or param search?")
-    if choice == "simple":
+    current_lap = 0
+    choice = raw_input("Simple, firsts or param search?\n")
+    if choice == "s":
         simple_track()
+    elif choice == "f":
+        track_firsts()
     else:
         param_search_track()
