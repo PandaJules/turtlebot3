@@ -15,8 +15,6 @@ import os
 
 PI = 3.14159265
 half_wheel_separation = 0.08
-front_distance_limit = 0.7
-side_distance_limit = 0.4
 direction_vector = [0, 0, 0, 0, 0]
 angles = [90, 45, 0, -45, -90]
 MAX_TB3_LINEAR = 0.8
@@ -31,7 +29,7 @@ RIGHT = 4
 # NN weights 5x2 for every sensor to each wheel
 a = 0.1
 b = 0.1
-c = 0.2
+c = 0.1
 
 WEIGHTS = [[0, 0, a, b, c],
            [c, b, a, 0, 0]]
@@ -80,14 +78,14 @@ def stabilize():
     model_state_msg.pose.orientation.z = 0
     model_state_msg.pose.orientation.w = 1
     if rospy.has_param('startXY'):
-        # x = rospy.get_param('startXY')['x']
-        y = rospy.get_param('startXY')
+        x = rospy.get_param('startXY/x')
+        y = rospy.get_param('startXY/y')
     else:
         rospy.logerr("NO PARAMETER NAMED startXY, setting to default")
         x = 0
         y = 2.5
-    model_state_msg.pose.position.x = 0
-    model_state_msg.pose.position.y = 2.5
+    model_state_msg.pose.position.x = x
+    model_state_msg.pose.position.y = y
     model_state_msg.pose.position.z = 0
 
     while (v1, v2) != (0, 0):
@@ -186,7 +184,6 @@ if __name__ == "__main__":
         if trying_to_stabilize:
             stabilize()
             trying_to_stabilize = False
-
         else:
             controlLoop()
             r.sleep()
