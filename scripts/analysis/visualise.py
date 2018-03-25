@@ -21,8 +21,20 @@ def plot(path_to_coordinates, i):
 
 
 if __name__ == "__main__":
-    # num = int(input("Enter log file number to visualise that trajectory:\n"))
-    for i in range(600, 650):
+    choice = "none"
+    n = []
+    while choice != 'r' and choice != 'n':
+        choice = raw_input("Do you want to enter a range (r) or a number(n)?\t")
+        if choice == 'r':
+            a = int(input("Give me the first number of the range\n"))
+            b = int(input("Give me the last number of the range\n"))
+            n = range(a, b+1)
+        elif choice == 'n':
+            a = int(input("Give me the number\n"))
+            n = [a]
+        else:
+            print("You should reply with either r or n")
+    for i in n:
         try:
             plot(LOG_PATH + "/logs/trajectory_log_{}.txt".format(i), i)
         except Exception as e:
