@@ -16,8 +16,8 @@ def plot(path_to_coordinates, i):
 
     plt.figure()
     plt.plot(xs, ys, 'b:')
-    plt.xlim(0, 8)
-    plt.ylim(0, 8)
+    #plt.xlim(0, 8)
+    #plt.ylim(0, 8)
     traj_name = LOG_PATH + "/screenshots" + "/traj"
     plt.savefig('{}{:d}.png'.format(traj_name, i))
 
@@ -40,4 +40,4 @@ if __name__ == "__main__":
         try:
             plot(LOG_PATH + "/logs/trajectory_log_{}.txt".format(i), i)
         except Exception as e:
-            pass
+            print(e)

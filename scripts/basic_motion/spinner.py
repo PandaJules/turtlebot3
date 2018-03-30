@@ -47,6 +47,7 @@ def rotate_with_odometry(angle, velocity_publisher, clockwise=False, angular_spe
 
     while abs(theta % (2*PI) - goal_angle % (2*PI)) > 0.005:
         velocity_publisher.publish(vel_msg)
+        print(theta)
 
     vel_msg.angular.z = 0
     velocity_publisher.publish(vel_msg)
