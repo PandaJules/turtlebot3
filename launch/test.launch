@@ -1,7 +1,7 @@
 <launch>
   <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle]"/>
-  <arg name="x_pos" default="3.5"/>
-  <arg name="y_pos" default="6"/>
+  <arg name="x_pos" default="0"/>
+  <arg name="y_pos" default="2.5"/>
   <arg name="z_pos" default="0"/>
   <arg name="roll" default="0"/>
   <arg name="pitch" default="0"/>
@@ -15,7 +15,7 @@
 
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find random_walker)/models/d_shaped.world"/>
+    <arg name="world_name" value="$(find random_walker)/models/hex.world"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>

@@ -28,19 +28,21 @@ NE = 3
 RIGHT = 4
 
 # NN weights 5x2 for every sensor to each wheel
-a = 0.1
-b = 0.1
-c = 0.1
+w = 24
 
+
+weight_space = [p for p in itertools.product([0.1, 0.2, 0.3], repeat=3)]
+a, b, c = weight_space[w]
 WEIGHTS = [[0, 0, a, b, c],
            [c, b, a, 0, 0]]
-weight_space = [p for p in itertools.product([0.1, 0.2, 0.3, 0.4, 0.5], repeat=3)]
 V_bias = [0, 0]
-w = 0
 x_sim, y_sim = 0, 0
+v1, v2 = 0, 0
 prev_lap = 0
 trying_to_stabilize = False
-bad_weights_file = os.path.join(os.path.expanduser('~'), "Desktop") + "/bad_weights_D.txt"
+bad_weights_file = os.path.join(os.path.expanduser('~'), "Desktop") + "/bad_weights_D2.txt"
+bad_weights = []
+collision_detected = False
 
 
 def odomMsgCallBack(odom_msg):
@@ -50,18 +52,20 @@ def odomMsgCallBack(odom_msg):
 
 
 def lapMsgCallBack(lap_msg):
-    global prev_lap, trying_to_stabilize, d, WEIGHTS
+    global prev_lap, trying_to_stabilize, w, a, b, c, WEIGHTS
     cur_lap = lap_msg.data
+    print(prev_lap, cur_lap)
     if cur_lap != prev_lap:
         if cur_lap == 0:
-            if w == 125:
+            if w == len(weight_space)-1:
                 shut_trajectory.publish(Bool(data=True))
                 rospy.signal_shutdown("Search is exhausted")
             else:
-                w += 1
-                a, b, c = weight_space[w]
-                WEIGHTS = [[0, 0, a, b, c],
-                           [c, b, a, 0, 0]]
+                if prev_lap == 21:
+                    w += 1
+                    a, b, c = weight_space[w]
+                    WEIGHTS = [[0, 0, a, b, c],
+                               [c, b, a, 0, 0]]
         prev_lap = cur_lap
         trying_to_stabilize = True
         shut_trajectory.publish(Bool(data=False))
@@ -71,7 +75,7 @@ def lapMsgCallBack(lap_msg):
 
 
 def stabilize():
-    global WEIGHTS, a, b, c, w
+    global WEIGHTS, a, b, c, w, collision_detected
     cmd_vel = Twist()
     cmd_vel.linear.x = 0
     cmd_vel.angular.z = 0
@@ -97,6 +101,7 @@ def stabilize():
         cmd_vel_pub.publish(cmd_vel)
         model_pub.publish(model_state_msg)
         wait_traj.publish(Bool(data=False))
+        print("Stabilising...")
 
     rospy.sleep(2)
 
@@ -105,16 +110,26 @@ def stabilize():
         model_pub.publish(model_state_msg)
         wait_traj.publish(Bool(data=False))
 
+    collision_detected = False
+    collision_traj.publish(Bool(data=collision_detected))
+
 
 def collisionCallBack(collision_msg):
-    global trying_to_stabilize, w, collision_detected
+    global w, WEIGHTS, a, b, c, collision_detected, trying_to_stabilize
     # if we have any collisions at all, discard those weights
-    if collision_msg.states and not collision_detected and not trying_to_stabilize:
-        collision_detected = True
-        print("Writing to bad file")
-        with open(bad_weights_file, 'a') as f:
-            f.write("{},{},{},{}\n".format(a, b, c, w))
-        trying_to_stabilize = True
+    if collision_msg.states:
+        if not collision_detected:
+            collision_detected = True
+            collision_traj.publish(Bool(data=collision_detected))
+            if w not in bad_weights:
+                print("Writing to bad file")
+                with open(bad_weights_file, 'a') as f:
+                    f.write("{},{},{},{}\n".format(a, b, c, w))
+                w += 1
+                a, b, c = weight_space[w]
+                WEIGHTS = [[0, 0, a, b, c],
+                           [c, b, a, 0, 0]]
+            trying_to_stabilize = True
 
 
 def cmdMsgCallBack(cmd_msg):
@@ -143,8 +158,8 @@ def set_wheel_velocities(left_wheel_speed=0.0, right_wheel_speed=0.0):
     cmd_vel.linear.x = (right_wheel_speed + left_wheel_speed) / 2.0
     if cmd_vel.linear.x > MAX_TB3_LINEAR:
         V_bias = [max(v - 0.05, -0.5) for v in V_bias]
-    # elif cmd_vel.linear.x < 0.2:
-    #     V_bias = [min(v + 0.05, 1.0) for v in V_bias]
+    elif cmd_vel.linear.x < 0.2:
+        V_bias = [min(v + 0.05, 1.0) for v in V_bias]
 
     # set angular velocity
     cmd_vel.angular.z = (right_wheel_speed - left_wheel_speed) / (2 * half_wheel_separation)
@@ -164,12 +179,13 @@ def set_wheel_velocities(left_wheel_speed=0.0, right_wheel_speed=0.0):
 
 def controlLoop():
     wait_traj.publish(Bool(data=True))
-    param_pub.publish(Float32MultiArray(data=[a,b,c,w]))
+    param_pub.publish(Float32MultiArray(data=[a, b, c, w]))
+    collision_traj.publish(Bool(data=collision_detected))
     # Velocities of L and R wheels are cross-connected to RHS and LHS sensors
     left_vel = np.dot(WEIGHTS[0], direction_vector) + V_bias[0]
     right_vel = np.dot(WEIGHTS[1], direction_vector) + V_bias[1]
     set_wheel_velocities(left_wheel_speed=left_vel.item(), right_wheel_speed=right_vel.item())
-    print(a, b, c, w)
+    print(a, b, c, w, v1, v2)
 
 
 """*******************************************************************************
@@ -183,6 +199,7 @@ if __name__ == "__main__":
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
     cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, cmdMsgCallBack)
     wait_traj = rospy.Publisher('/can_log', Bool, queue_size=3)
+    collision_traj = rospy.Publisher('/collision_detected', Bool, queue_size=3)
     model_pub = rospy.Publisher('/gazebo/set_model_state', ModelState, queue_size=2)
     param_pub = rospy.Publisher('/abcw', Float32MultiArray, queue_size=2)
     shut_trajectory = rospy.Publisher('/paramSearch', Bool, queue_size=3)

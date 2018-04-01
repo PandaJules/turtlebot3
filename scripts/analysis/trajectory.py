@@ -6,7 +6,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Int32, Bool
 
 
-LAP_RELOAD = 35
+LAP_RELOAD = 21
 (x_sim, y_sim) = 0, 0
 (x_sim_prev, y_sim_prev) = 0, 0
 LOG_PATH = os.path.join(os.path.expanduser('~'), "Desktop")
@@ -38,6 +38,11 @@ def logCallBack(log_msg):
         if not prev_can_log:
             print("Now we are back to logging...\n")
     prev_can_log = can_log
+
+
+def collCallBack(log_msg):
+    global collision_occurred
+    collision_occurred = log_msg.data
 
 
 def no_collision_track():
@@ -123,40 +128,61 @@ def param_search_track():
         while not rospy.is_shutdown():
             filename = '{}{:d}.txt'.format(file_name_, i)
             print("\nWriting a log file of trajectories to {}".format(filename))
+
+            while collision_occurred:
+                r.sleep()
             current_lap = 0
             with open(filename, 'w') as tlog:
                 while current_lap < LAP_RELOAD:
 
-                    # if bumped into one of the walls, stop tracking, start writing to the wrong log file
-                    if not can_log:
-                        print("Collision probably occurred!!! Overwriting log "+ str(i))
-                        while not can_log:
-                            print("Sleep and wait")
-                            r.sleep()
-                        at_cross_line = False
-                        # decrease i, because we will increase it by 1 anyway and we want the same log file
-                        i -= 1
+                    if collision_occurred:
+                        print("Discarding file {}".format(i))
+                        at_cross_line = True
                         break
-                    else:
-                        # if it's not the first lap and we have moved at least a little in X or Y direction, then log it
-                        if current_lap > 0 and (round(x_sim_prev, 5) != round(x_sim, 5) or round(y_sim_prev, 5) != round(y_sim, 5)):
-                            tlog.write('{:.6f},{:.6f}\n'.format(x_sim, y_sim))
-                            x_sim_prev = x_sim
-                            y_sim_prev = y_sim
 
-                        # if we are at the line where we started, then increase the lap number
-                        if abs(round(x_sim, 3) - start_x) < 0.02 and abs(round(y_sim, 3) - start_y) < 1:
-                            if not at_cross_line:
-                                at_cross_line = True
-                                current_lap += 1
-                                print("New lap. Number {} started".format(current_lap))
-                        else:
-                            at_cross_line = False
+                    if can_log and (round(x_sim_prev, 5) != round(x_sim, 5) or round(y_sim_prev, 5) != round(y_sim, 5)):
+                        tlog.write('{:.6f},{:.6f}\n'.format(x_sim, y_sim))
+                        x_sim_prev = x_sim
+                        y_sim_prev = y_sim
+
+                    # if we are at the line where we started, then we have done a lap
+                    if abs(round(x_sim, 3) - start_x) < 0.05 and abs(round(y_sim, 3) - start_y) < 1:
+                        if not at_cross_line:
+                            at_cross_line = True
+                            current_lap += 1
+                            print("New lap. Number {} started".format(current_lap))
+                    else:
+                        at_cross_line = False
 
                     laps = Int32(data=current_lap)
                     lap_pub.publish(laps)
                     r.sleep()
             i += 1
+    except Exception as e:
+        print(e)
+
+
+def track_once():
+    global x_sim_prev, y_sim_prev, current_lap, at_cross_line
+
+    filename = determine_filename()
+
+    try:
+        with open(filename, 'a') as tlog:
+            while current_lap < LAP_RELOAD:
+                if round(x_sim_prev, 5) != round(x_sim, 5) or round(y_sim_prev, 5) != round(y_sim, 5):
+                    tlog.write('{:.6f},{:.6f}\n'.format(x_sim, y_sim))
+                    x_sim_prev = x_sim
+                    y_sim_prev = y_sim
+
+                # if we are at the line where we started, then we have done a lap, so restart
+                if abs(round(x_sim, 3) - start_x) < 0.05 and abs(round(y_sim, 3) - start_y) < 1:
+                    if not at_cross_line:
+                        at_cross_line = True
+                        current_lap += 1
+                        print("New lap. Number {} started".format(current_lap))
+                else:
+                    at_cross_line = False
     except Exception as e:
         print(e)
 
@@ -178,6 +204,7 @@ if __name__ == "__main__":
     odometry_sub = rospy.Subscriber('/odom', Odometry, odomMsgCallBack)
     traj_shut_sub = rospy.Subscriber('/paramSearch', Bool, shutCallBack)
     traj_wait_sub = rospy.Subscriber('/can_log', Bool, logCallBack)
+    collision_sub = rospy.Subscriber('/collision_detected', Bool, collCallBack)
     lap_pub = rospy.Publisher('/laps', Int32, queue_size=5)
 
     r = rospy.Rate(100)
@@ -193,8 +220,11 @@ if __name__ == "__main__":
     current_lap = 0
     choice = raw_input("Simple(s), firsts(f) or param search?\n")
     if choice == "s":
-        no_collision_track()
+        print("You chose simple\n")
+        track_once()
     elif choice == "f":
+        print("You chose firsts\n")
         track_firsts()
     else:
+        print("You chose parameter search\n")
         param_search_track()
