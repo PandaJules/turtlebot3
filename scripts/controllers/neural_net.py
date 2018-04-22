@@ -28,10 +28,25 @@ NE = 3
 RIGHT = 4
 
 # NN weights 5x2 for every sensor to each wheel
-w = 24
+w = 0
 
 
-weight_space = [p for p in itertools.product([0.1, 0.2, 0.3], repeat=3)]
+# weight_space = [p for p in itertools.product([0.1, 0.2, 0.3], repeat=3)]
+# weight_space = [(0.2, 0.4, 0.1), (0.2, 0.4, 0.05), (0.2, 0.4, 0.15),
+#                 (0.2, 0.35, 0.1), (0.2, 0.35, 0.05), (0.2, 0.35, 0.15),
+#                 (0.2, 0.45, 0.1), (0.2, 0.45, 0.05), (0.2, 0.45, 0.15),
+#                 (0.25, 0.4, 0.1), (0.25, 0.4, 0.05), (0.25, 0.4, 0.15),
+#                 (0.25, 0.35, 0.1), (0.25, 0.35, 0.05), (0.25, 0.35, 0.15),
+#                 (0.25, 0.45, 0.1), (0.25, 0.45, 0.05), (0.25, 0.45, 0.15),
+#                 (0.15, 0.4, 0.1), (0.15, 0.4, 0.05), (0.15, 0.4, 0.15),
+#                 (0.15, 0.35, 0.1), (0.15, 0.35, 0.05), (0.15, 0.35, 0.15),
+#                 (0.15, 0.45, 0.1), (0.15, 0.45, 0.05), (0.15, 0.45, 0.15),
+#                 ]
+weight_space = [(0.2, 0.4, 0.1), (0.2, 0.4, 0.05),
+                (0.2, 0.35, 0.1), (0.2, 0.35, 0.05), (0.2, 0.35, 0.15),
+                (0.15, 0.35, 0.15),
+                (0.15, 0.45, 0.1)
+                ]
 a, b, c = weight_space[w]
 WEIGHTS = [[0, 0, a, b, c],
            [c, b, a, 0, 0]]
@@ -40,7 +55,7 @@ x_sim, y_sim = 0, 0
 v1, v2 = 0, 0
 prev_lap = 0
 trying_to_stabilize = False
-bad_weights_file = os.path.join(os.path.expanduser('~'), "Desktop") + "/bad_weights_D2.txt"
+bad_weights_file = os.path.join(os.path.expanduser('~'), "Desktop") + "/bad_weights_D3.txt"
 bad_weights = []
 collision_detected = False
 
@@ -61,14 +76,16 @@ def lapMsgCallBack(lap_msg):
                 shut_trajectory.publish(Bool(data=True))
                 rospy.signal_shutdown("Search is exhausted")
             else:
-                if prev_lap == 21:
+                if prev_lap == 31:
                     w += 1
                     a, b, c = weight_space[w]
                     WEIGHTS = [[0, 0, a, b, c],
                                [c, b, a, 0, 0]]
+                    trying_to_stabilize = True
+                    shut_trajectory.publish(Bool(data=False))
         prev_lap = cur_lap
-        trying_to_stabilize = True
-        shut_trajectory.publish(Bool(data=False))
+        #trying_to_stabilize = True
+        #shut_trajectory.publish(Bool(data=False))
     else:
         trying_to_stabilize = False
         shut_trajectory.publish(Bool(data=False))
@@ -200,12 +217,12 @@ if __name__ == "__main__":
     cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, cmdMsgCallBack)
     wait_traj = rospy.Publisher('/can_log', Bool, queue_size=3)
     collision_traj = rospy.Publisher('/collision_detected', Bool, queue_size=3)
-    model_pub = rospy.Publisher('/gazebo/set_model_state', ModelState, queue_size=2)
+    #model_pub = rospy.Publisher('/gazebo/set_model_state', ModelState, queue_size=2)
     param_pub = rospy.Publisher('/abcw', Float32MultiArray, queue_size=2)
     shut_trajectory = rospy.Publisher('/paramSearch', Bool, queue_size=3)
     laser_scan_sub = rospy.Subscriber('/scan', LaserScan, laserScanMsgCallBack)
     laps_sub = rospy.Subscriber('/laps', Int32, lapMsgCallBack)
-    collision_sub = rospy.Subscriber('/robot_bumper', ContactsState, collisionCallBack)
+    #collision_sub = rospy.Subscriber('/robot_bumper', ContactsState, collisionCallBack)
     odometry_sub = rospy.Subscriber('/odom', Odometry, odomMsgCallBack)
 
     r = rospy.Rate(125)

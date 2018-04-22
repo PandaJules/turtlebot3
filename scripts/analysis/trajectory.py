@@ -6,7 +6,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Int32, Bool
 
 
-LAP_RELOAD = 21
+LAP_RELOAD = 31
 (x_sim, y_sim) = 0, 0
 (x_sim_prev, y_sim_prev) = 0, 0
 LOG_PATH = os.path.join(os.path.expanduser('~'), "Desktop")

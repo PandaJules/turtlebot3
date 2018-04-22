@@ -1,4 +1,4 @@
 <launch>
-  <node pkg="random_walker" type="neural_net_consec.py" name="Neural_net_turtlebot3"  output="screen">
+  <node pkg="random_walker" type="neural_net.py" name="Neural_net_turtlebot3"  output="screen">
   </node>
 </launch>

@@ -16,11 +16,12 @@ import os
 ***************************"""
 PI = 3.14159265
 half_wheel_separation = 0.07
-rotate_angle = 30
+rotate_angle = 45
 angles = [90, 45, 0, -45, -90]
-front_distance_limit = 1.2
-oblique_distance_limit = 0.6
-side_distance_limit = 0.4
+front_distance_limit = 0.5
+oblique_distance_limit = 0.5
+side_distance_limit = 0.5
+# 1.2, 0.6, 0.4
 wheel_radius = 0.03
 right_joint_encoder = 0.0
 new_right_joint_encoder = 0.0

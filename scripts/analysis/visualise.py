@@ -14,6 +14,26 @@ def plot(path_to_coordinates, i):
             xs.append(x)
             ys.append(y)
 
+    colours = ['y','b', 'r', 'g']
+    # plt.figure()
+    plt.plot(xs, ys, colours[i % 4] + '-')
+    plt.xlim(-3, 3)
+    plt.ylim(-3, 3)
+    traj_name = LOG_PATH + "/screenshots" + "/traj"
+    # plt.savefig('{}{:d}.png'.format(traj_name, i))
+    plt.savefig('{}_drift.png'.format(traj_name))
+
+
+def plot_in_one(path_to_coordinates, n):
+    xs = []
+    ys = []
+
+    with open(path_to_coordinates, "r") as mycoords:
+        for line in mycoords:
+            [x, y] = map(float, line.split(","))
+            xs.append(x)
+            ys.append(y)
+
     plt.figure()
     plt.plot(xs, ys, 'b:')
     plt.xlim(-3, 3)
