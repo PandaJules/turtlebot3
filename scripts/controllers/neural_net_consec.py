@@ -24,9 +24,9 @@ CENTER = 2
 NE = 3
 RIGHT = 4
 
-a = 0.2
-b = 0.4
-c = 0.1
+a = 0.1
+b = 0.2
+c = 0.15
 
 # NN weights 5x2 for every sensor to each wheel
 WEIGHTS = [[0, 0, a, b, c],

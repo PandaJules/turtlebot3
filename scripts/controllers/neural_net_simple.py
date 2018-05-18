@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 import numpy as np
+import random
+
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Int32, Bool, Float64
 from nav_msgs.msg import Odometry
 from gazebo_msgs.msg import ModelState
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
 
 """"**************************
 * Globals
@@ -72,10 +76,8 @@ def stabilize():
 
     model_state_msg = ModelState()
     model_state_msg.model_name = 'turtlebot3_burger'
-    model_state_msg.pose.orientation.x = 0
-    model_state_msg.pose.orientation.y = 0
-    model_state_msg.pose.orientation.z = 0
-    model_state_msg.pose.orientation.w = 1
+    yaw = random.uniform(-PI/4, PI/4)
+    model_state_msg.pose.orientation=quaternion_from_euler(0,0, yaw)
     if rospy.has_param('startXY'):
         x = rospy.get_param('startXY/x')
         y = rospy.get_param('startXY/y')

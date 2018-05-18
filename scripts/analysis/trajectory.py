@@ -6,7 +6,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Int32, Bool
 
 
-LAP_RELOAD = 31
+LAP_RELOAD = 6
 (x_sim, y_sim) = 0, 0
 (x_sim_prev, y_sim_prev) = 0, 0
 LOG_PATH = os.path.join(os.path.expanduser('~'), "Desktop")
@@ -91,7 +91,7 @@ def track_firsts():
     filename = determine_filename()
 
     try:
-        with open(filename, 'a') as tlog:
+        with open(filename, 'w') as tlog:
             while 1:
                 if can_log and (round(x_sim_prev, 5) != round(x_sim, 5) or round(y_sim_prev, 5) != round(y_sim, 5)):
                     tlog.write('{:.6f},{:.6f}\n'.format(x_sim, y_sim))
@@ -162,31 +162,6 @@ def param_search_track():
         print(e)
 
 
-def track_once():
-    global x_sim_prev, y_sim_prev, current_lap, at_cross_line
-
-    filename = determine_filename()
-
-    try:
-        with open(filename, 'a') as tlog:
-            while current_lap < LAP_RELOAD:
-                if round(x_sim_prev, 5) != round(x_sim, 5) or round(y_sim_prev, 5) != round(y_sim, 5):
-                    tlog.write('{:.6f},{:.6f}\n'.format(x_sim, y_sim))
-                    x_sim_prev = x_sim
-                    y_sim_prev = y_sim
-
-                # if we are at the line where we started, then we have done a lap, so restart
-                if abs(round(x_sim, 3) - start_x) < 0.05 and abs(round(y_sim, 3) - start_y) < 1:
-                    if not at_cross_line:
-                        at_cross_line = True
-                        current_lap += 1
-                        print("New lap. Number {} started".format(current_lap))
-                else:
-                    at_cross_line = False
-    except Exception as e:
-        print(e)
-
-
 def determine_filename():
     i = int(input("Which log file to write to: -1 for automatic detection / any other integer for your choice\n"))
     file_name_ = LOG_PATH + "/logs/trajectory_log_"
@@ -200,14 +175,14 @@ def determine_filename():
 
 
 if __name__ == "__main__":
-    rospy.init_node('turtlebot3_trajectory')
+    rospy.init_node('Trajectory_tracker')
     odometry_sub = rospy.Subscriber('/odom', Odometry, odomMsgCallBack)
     traj_shut_sub = rospy.Subscriber('/paramSearch', Bool, shutCallBack)
     traj_wait_sub = rospy.Subscriber('/can_log', Bool, logCallBack)
     collision_sub = rospy.Subscriber('/collision_detected', Bool, collCallBack)
     lap_pub = rospy.Publisher('/laps', Int32, queue_size=5)
 
-    r = rospy.Rate(100)
+    r = rospy.Rate(200)
     while (x_sim, y_sim) == (0, 0):
         r.sleep()
 
@@ -218,13 +193,13 @@ if __name__ == "__main__":
     rospy.set_param('startXY', di)
 
     current_lap = 0
-    choice = raw_input("Simple(s), firsts(f) or param search?\n")
+    choice = raw_input("Simple(s), no collisions(n) or param search?\n")
     if choice == "s":
         print("You chose simple\n")
-        track_once()
-    elif choice == "f":
-        print("You chose firsts\n")
         track_firsts()
+    elif choice == "n":
+        print("You chose no-collisions\n")
+        no_collision_track()
     else:
         print("You chose parameter search\n")
         param_search_track()

@@ -1,5 +1,5 @@
 <launch>
 
-    <node pkg="random_walker" type="trajectory.py" name="turtlebot3_trajectory"  output="screen">
+    <node pkg="random_walker" type="trajectory.py" name="Trajectory_tracker"  output="screen">
     </node>
 </launch>

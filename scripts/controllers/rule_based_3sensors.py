@@ -74,7 +74,7 @@ def controlLoop():
     global new_right_joint_encoder, turtlebot3_state
 
     cmd_vel = Twist()
-    cmd_vel.linear.x = 0.25
+    cmd_vel.linear.x = 0.22
     rot_vel_left = Twist()
     rot_vel_left.angular.z = 1.57
     rot_vel_right = Twist()
@@ -99,12 +99,8 @@ def controlLoop():
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == RIGHT_TURN:
-        a = right_joint_encoder
-        t = degrees(theta%(2*PI))
         while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
             cmd_vel_pub.publish(rot_vel_right)
-        print(a - right_joint_encoder)
-        print(abs(degrees(theta%(2*PI))-t))
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == LEFT_TURN:

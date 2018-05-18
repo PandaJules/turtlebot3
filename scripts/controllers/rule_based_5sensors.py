@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import numpy as np
+import random
+
 import rospy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -8,7 +10,7 @@ from gazebo_msgs.msg import ModelState
 from math import degrees, radians
 from sensor_msgs.msg import LaserScan, JointState
 from std_msgs.msg import Int32, Bool, Float64
-from tf.transformations import euler_from_quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import os
 
 """"**************************
@@ -16,11 +18,11 @@ import os
 ***************************"""
 PI = 3.14159265
 half_wheel_separation = 0.07
-rotate_angle = 45
+rotate_angle = 30
 angles = [90, 45, 0, -45, -90]
-front_distance_limit = 0.5
+front_distance_limit = 0.9
 oblique_distance_limit = 0.5
-side_distance_limit = 0.5
+side_distance_limit = 0.4
 # 1.2, 0.6, 0.4
 wheel_radius = 0.03
 right_joint_encoder = 0.0
@@ -86,10 +88,12 @@ def stabilize():
 
     model_state_msg = ModelState()
     model_state_msg.model_name = 'turtlebot3_burger'
-    model_state_msg.pose.orientation.x = 0
-    model_state_msg.pose.orientation.y = 0
-    model_state_msg.pose.orientation.z = 0
-    model_state_msg.pose.orientation.w = 1
+    # yaw = random.uniform(-PI / 4, PI / 4)
+    yaw = 0
+    [model_state_msg.pose.orientation.x,
+     model_state_msg.pose.orientation.y,
+     model_state_msg.pose.orientation.z,
+     model_state_msg.pose.orientation.w] = quaternion_from_euler(0, 0, yaw)
     if rospy.has_param('startXY'):
         x = rospy.get_param('startXY/x')
         y = rospy.get_param('startXY/y')
@@ -170,7 +174,6 @@ def rotate_with_odometry(angle, velocity_publisher, clockwise=False, angular_spe
 def controlLoop():
     global new_right_joint_encoder, turtlebot3_state, t
     wait_traj.publish(Bool(data=True))
-    wheel_rotation_angle = 1.02 * (rotate_angle * half_wheel_separation / wheel_radius)
     cmd_vel = Twist()
     cmd_vel.linear.x = 0.22
     rot_vel_left = Twist()
@@ -220,31 +223,11 @@ def controlLoop():
 
     elif turtlebot3_state == LEFT_TURN:
         print("turning LEFT\n")
-        # new_right_joint_encoder = right_joint_encoder + wheel_rotation_angle
-        # t = degrees(theta)
-        # a = right_joint_encoder
-        # while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
-        #     cmd_vel_pub.publish(rot_vel_left)
-        # a2 = a - right_joint_encoder
-        # c2 = abs(degrees(theta) - t)
-        # c2 = c2 if c2 < 180 else 360 - c2
-        # b = degrees(a2 * wheel_radius / half_wheel_separation)
-        # print(b, c2)
         rotate_with_odometry(rotate_angle, cmd_vel_pub, clockwise=False)
         turtlebot3_state = GET_DIRECTION
 
     elif turtlebot3_state == RIGHT_TURN:
         print("turning RIGHT\n")
-        # new_right_joint_encoder = right_joint_encoder - wheel_rotation_angle
-        # t = degrees(theta)
-        # a = right_joint_encoder
-        # while abs(new_right_joint_encoder - right_joint_encoder) > 0.05:
-        #     cmd_vel_pub.publish(rot_vel_right)
-        # a2 = a - right_joint_encoder
-        # c2 = abs(degrees(theta) - t)
-        # c2 = c2 if c2 < 180 else 360 - c2
-        # b = degrees(a2 * wheel_radius / half_wheel_separation)
-        # print(b, c2)
         rotate_with_odometry(rotate_angle, cmd_vel_pub, clockwise=True)
         turtlebot3_state = GET_DIRECTION
 
