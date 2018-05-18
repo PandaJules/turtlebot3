@@ -1,0 +1,38 @@
+<sdf version='1.4'>
+    <model name='Heart'>
+      <static>1</static>
+	<link name='symbol'>
+
+        <collision name='body'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://Heart/meshes/heart.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        <max_contacts>10</max_contacts>
+        <surface>
+          <bounce/>
+          <friction>
+            <ode/>
+          </friction>
+          <contact>
+            <ode/>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name='body'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://Heart/meshes/heart.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        
+      </visual>
+    </link>
+  </model>
+</sdf>
